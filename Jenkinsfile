@@ -54,41 +54,32 @@ pipeline {
             }
         }
 
-        stage('Test GET API') {
+        stage('Test API (Dynamic)') {
             steps {
-                echo 'Testing GET endpoint from Jenkins container'
+                echo 'Testing API endpoints dynamically (GET & SOAP POST)'
                 sh """
                     echo 'Waiting 20 seconds for WSO2 MI to fully start...'
                     sleep 20
+
+                    # GET request
                     echo 'GET: http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment'
                     curl -I http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment || true
-                """
-            }
-        }
 
-        stage('Test SOAP POST') {
-            steps {
-                echo 'Sending SOAP POST request to WSO2 MI service'
-                sh """
-                    # Create SOAP request file
-                    cat <<EOF > setAppointment.xml
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:app="http://services.appointment/">
-   <soapenv:Header/>
-   <soapenv:Body>
-      <app:setAppointment>
-         <appointmentId>123</appointmentId>
-         <name>Auni Hazimah</name>
-         <time>2025-11-05T10:00:00</time>
-      </app:setAppointment>
-   </soapenv:Body>
-</soapenv:Envelope>
-EOF
-
-                    # Send the SOAP request
-                    curl -X POST \
+                    # SOAP POST request
+                    echo 'POST: http://${CONTAINER_NAME}:${MANAGEMENT_PORT}/services/AppointmentServices'
+                    curl -v -X POST \
                       http://${CONTAINER_NAME}:${MANAGEMENT_PORT}/services/AppointmentServices \
                       -H "Content-Type: text/xml;charset=UTF-8" \
-                      -d @setAppointment.xml
+                      -d '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:app="http://services.appointment/">
+                             <soapenv:Header/>
+                             <soapenv:Body>
+                                <app:setAppointment>
+                                   <appointmentId>123</appointmentId>
+                                   <name>Auni Hazimah</name>
+                                   <time>2025-11-05T10:00:00</time>
+                                </app:setAppointment>
+                             </soapenv:Body>
+                         </soapenv:Envelope>'
                 """
             }
         }
