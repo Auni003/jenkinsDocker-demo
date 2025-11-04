@@ -39,13 +39,15 @@ pipeline {
                 sh """
                     docker run -d \
                     --name ${CONTAINER_NAME} \
+                    --network jenkins-net \
                     -p ${API_PORT}:${API_PORT} \
                     -p ${MANAGEMENT_PORT}:${MANAGEMENT_PORT} \
                     -p ${INTERNAL_PORT}:${INTERNAL_PORT} \
                     ${IMAGE_NAME}:v1
-                """
+            """
             }
         }
+
 
         stage('Verify') {
             steps {
