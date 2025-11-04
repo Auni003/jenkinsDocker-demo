@@ -30,16 +30,20 @@ pipeline {
             }
         }
         stage('Run Docker Container') {
-            steps {
-                echo 'Running API container on jenkins-net network'
-                sh """
-                    docker run -d \
-                    --name ${CONTAINER_NAME} \
-                    --network ${NETWORK_NAME} \
-                    ${IMAGE_NAME}:v1
-                """
-            }
-        }
+    steps {
+        echo 'Running API container on jenkins-net network'
+        sh """
+            docker run -d \
+            --name ${CONTAINER_NAME} \
+            --network jenkins-net \
+            -p ${API_PORT}:${API_PORT} \
+            -p ${MANAGEMENT_PORT}:${MANAGEMENT_PORT} \
+            -p ${INTERNAL_PORT}:${INTERNAL_PORT} \
+            ${IMAGE_NAME}:v1
+        """
+    }
+}
+
         stage('Verify') {
             steps {
                 echo 'Listing running Docker containers'
