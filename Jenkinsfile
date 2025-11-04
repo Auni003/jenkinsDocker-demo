@@ -3,12 +3,13 @@ pipeline {
     environment {
         IMAGE_NAME = "myapi"
         CONTAINER_NAME = "myapi-container"
-        API_PORT = "8290"
-        MANAGEMENT_PORT = "8253"
+        API_PORT = "8290"           // API endpoint port
+        MANAGEMENT_PORT = "8253"    // Management port
         INTERNAL_PORT = "9164"
         NETWORK_NAME = "jenkins-net"
     }
     stages {
+
         stage('Prepare') {
             steps {
                 echo 'Workspace ready: Jenkins will clone repository automatically'
@@ -54,36 +55,43 @@ pipeline {
             }
         }
 
-        stage('Test API (Dynamic)') {
+        stage('Test API Endpoints') {
             steps {
                 echo 'Testing API endpoints dynamically (GET & SOAP POST)'
                 sh """
-                    echo 'Waiting 20 seconds for WSO2 MI to fully start...'
-                    sleep 20
+                    # Wait for WSO2 MI to fully start
+                    echo 'Waiting 40 seconds for WSO2 MI to deploy CAR files...'
+                    sleep 40
 
-                    # GET request
-                    echo 'GET: http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment'
-                    curl -I http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment || true
+                    # --- Test GET Endpoint ---
+                    echo 'Testing GET endpoint: http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment'
+                    curl -i http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment || true
 
-                    # SOAP POST request
-                    echo 'POST: http://${CONTAINER_NAME}:${MANAGEMENT_PORT}/services/AppointmentServices'
+                    # --- Test SOAP POST Endpoint ---
+                    echo 'Testing SOAP POST endpoint: http://${CONTAINER_NAME}:${API_PORT}/services/AppointmentServices'
+
+                    cat <<EOF > setAppointment.xml
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:app="http://services.appointment/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <app:setAppointment>
+         <appointmentId>123</appointmentId>
+         <name>Auni Hazimah</name>
+         <time>2025-11-05T10:00:00</time>
+      </app:setAppointment>
+   </soapenv:Body>
+</soapenv:Envelope>
+EOF
+
                     curl -v -X POST \
-                      http://${CONTAINER_NAME}:${MANAGEMENT_PORT}/services/AppointmentServices \
+                      http://${CONTAINER_NAME}:${API_PORT}/services/AppointmentServices \
                       -H "Content-Type: text/xml;charset=UTF-8" \
-                      -d '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:app="http://services.appointment/">
-                             <soapenv:Header/>
-                             <soapenv:Body>
-                                <app:setAppointment>
-                                   <appointmentId>123</appointmentId>
-                                   <name>Auni Hazimah</name>
-                                   <time>2025-11-05T10:00:00</time>
-                                </app:setAppointment>
-                             </soapenv:Body>
-                         </soapenv:Envelope>'
+                      --data-binary @setAppointment.xml
                 """
             }
         }
     }
+
     post {
         always {
             echo 'Pipeline finished!'
