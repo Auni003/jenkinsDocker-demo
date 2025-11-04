@@ -14,12 +14,14 @@ pipeline {
                 echo 'Workspace ready: Jenkins will clone repository automatically'
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image ${IMAGE_NAME}:v1"
                 sh "docker build -t ${IMAGE_NAME}:v1 -f api/Dockerfile.api ./api"
             }
         }
+
         stage('Stop & Remove Old Container') {
             steps {
                 echo 'Stopping and removing old container if exists'
@@ -29,36 +31,64 @@ pipeline {
                 """
             }
         }
+
         stage('Run Docker Container') {
-    steps {
-        echo 'Running API container on jenkins-net network'
-        sh """
-            docker run -d \
-            --name myapi-container \
-            --network jenkins-net \
-            -p 8290:8290 \
-            -p 8253:8253 \
-            -p 9164:9164 \
-            myapi:v1
-        """
-    }
-}
+            steps {
+                echo 'Running API container on jenkins-net network'
+                sh """
+                    docker run -d \
+                    --name ${CONTAINER_NAME} \
+                    --network ${NETWORK_NAME} \
+                    -p ${API_PORT}:${API_PORT} \
+                    -p ${MANAGEMENT_PORT}:${MANAGEMENT_PORT} \
+                    -p ${INTERNAL_PORT}:${INTERNAL_PORT} \
+                    ${IMAGE_NAME}:v1
+                """
+            }
+        }
 
-
-        stage('Verify') {
+        stage('Verify Containers') {
             steps {
                 echo 'Listing running Docker containers'
                 sh "docker ps"
             }
         }
-        stage('Test API') {
+
+        stage('Test GET API') {
             steps {
-                echo 'Testing API endpoint from Jenkins container'
+                echo 'Testing GET endpoint from Jenkins container'
                 sh """
                     echo 'Waiting 20 seconds for WSO2 MI to fully start...'
                     sleep 20
-                    echo 'Testing endpoint: http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment'
+                    echo 'GET: http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment'
                     curl -I http://${CONTAINER_NAME}:${API_PORT}/appointmentservices/getAppointment || true
+                """
+            }
+        }
+
+        stage('Test SOAP POST') {
+            steps {
+                echo 'Sending SOAP POST request to WSO2 MI service'
+                sh """
+                    # Create SOAP request file
+                    cat <<EOF > setAppointment.xml
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:app="http://services.appointment/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <app:setAppointment>
+         <appointmentId>123</appointmentId>
+         <name>Auni Hazimah</name>
+         <time>2025-11-05T10:00:00</time>
+      </app:setAppointment>
+   </soapenv:Body>
+</soapenv:Envelope>
+EOF
+
+                    # Send the SOAP request
+                    curl -X POST \
+                      http://${CONTAINER_NAME}:${MANAGEMENT_PORT}/services/AppointmentServices \
+                      -H "Content-Type: text/xml;charset=UTF-8" \
+                      -d @setAppointment.xml
                 """
             }
         }
