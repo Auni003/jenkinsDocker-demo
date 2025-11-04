@@ -34,15 +34,16 @@ pipeline {
         echo 'Running API container on jenkins-net network'
         sh """
             docker run -d \
-            --name ${CONTAINER_NAME} \
+            --name myapi-container \
             --network jenkins-net \
-            -p ${API_PORT}:${API_PORT} \
-            -p ${MANAGEMENT_PORT}:${MANAGEMENT_PORT} \
-            -p ${INTERNAL_PORT}:${INTERNAL_PORT} \
-            ${IMAGE_NAME}:v1
+            -p 8290:8290 \
+            -p 8253:8253 \
+            -p 9164:9164 \
+            myapi:v1
         """
     }
 }
+
 
         stage('Verify') {
             steps {
