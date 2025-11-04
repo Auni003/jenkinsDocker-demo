@@ -1,5 +1,5 @@
 # Use WSO2 Micro Integrator base image
-FROM wso2mi-4.4.0
+FROM wso2/wso2mi:4.4.0
 
 # Set working directory
 WORKDIR /home/wso2carbon/wso2mi-4.4.0/repository/deployment/server/carbonapps/
