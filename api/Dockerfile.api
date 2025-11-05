@@ -1,0 +1,14 @@
+# Use WSO2 Micro Integrator base image
+FROM wso2/wso2mi:4.4.0
+
+# Set working directory
+WORKDIR /home/wso2carbon/wso2mi-4.4.0/repository/deployment/server/carbonapps/
+
+# Copy your .car file into deployment directory
+COPY ./target/AppointmentServices_1.0.0.car ./
+
+# Expose API ports
+EXPOSE 8290 8253 9164
+
+# Start the Micro Integrator
+CMD ["/home/wso2carbon/wso2mi-4.4.0/bin/micro-integrator.sh"]
