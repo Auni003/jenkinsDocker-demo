@@ -2,22 +2,31 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "myapi"
+        IMAGE_NAME = "myapi-img"
         CONTAINER_NAME = "myapi-container"
         NETWORK_NAME = "jenkins-net"
+        API_PORT = "8290"
+        MANAGEMENT_PORT = "8253"
     }
 
     stages {
+
+        stage ('Prepare'){
+            steps{
+                echo 'Workspace ready: Jenkins will clone repository automatically'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                echo "🔧 Building Docker image..."
+                echo "🔧 Building Docker image"
                 sh "docker build -t ${IMAGE_NAME}:v1 ."
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Stop & Remove Old Container') {
             steps {
-                echo "🛑 Stopping old container (if exists)..."
+                echo "Stopping old container (if exists)"
                 sh """
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
