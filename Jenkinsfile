@@ -50,7 +50,7 @@ pipeline {
 
         stage('Test API') {
             steps {
-                echo "Waiting 20 seconds for WSO2 MI to fully start"
+                echo "Wait 20 seconds for WSO2 MI to fully start"
                 sh """
                     sleep 20
                     curl -I http://${CONTAINER_NAME}:8290 || true
